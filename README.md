@@ -43,7 +43,7 @@ To set up the project on your machine:
 | Script             | Description                                                                                   | Input            | Output                                                                  |
 |--------------------|-----------------------------------------------------------------------------------------------|------------------|-------------------------------------------------------------------------|
 | `experiment/density_plots.py` | Plots the density graphs of the input features and the target variable.                       | `in_out_files/dataset_ul.csv` | `in_out_files/figures/density_plot.png`                                |
-| `experiment/random_search.py` | Performs hyperparameter optimization for all models and logs the results.                     | `in_out_files/dataset_ul.csv` | `in_out_files/random_search_output.txt`                                |
+| `experiment/model_selection.py` | Performs hyperparameter optimization for all models and logs the results.                     | `in_out_files/dataset_ul.csv` | `in_out_files/model_selection_output.txt`                                |
 | `experiment/train_test.py`    | Trains and tests the models, saves evaluation results, and generates scatter plots per model. | `in_out_files/dataset_ul.csv` | `in_out_files/train_test_output.csv` and `in_out_files/figures/scatter_plot-<CPU>.png` |
 
 You can use the following commands to automatically format, lint, and check your code for better readability and consistency:

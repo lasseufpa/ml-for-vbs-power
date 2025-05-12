@@ -146,7 +146,7 @@ def evaluate_models_by_platform(features, target, best_metric="mse"):
             print(f"No models were successfully trained for {platform}.")
 
 
-with open("in_out_files/random_search_output.txt", "w") as f:
+with open("in_out_files/model_selection_output.txt", "w") as f:
     sys.stdout = f
 
     try:
