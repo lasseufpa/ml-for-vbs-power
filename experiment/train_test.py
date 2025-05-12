@@ -1,15 +1,16 @@
 import warnings
-from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from pytz import timezone
+from numpy import nan
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import (mean_absolute_error,
-                             mean_absolute_percentage_error,
-                             root_mean_squared_error)
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    root_mean_squared_error,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler
@@ -19,9 +20,9 @@ warnings.filterwarnings("ignore")
 features = ["airtime", "mean_snr", "mean_used_mcs"]
 target = "rapl_power"
 config_cols = ["cpu_platform", "fixed_mcs_flag", "failed_experiment", "BW"]
-df = pd.read_csv(
-    "in_out_files/dataset_ul.csv", usecols=features + config_cols + [target]
-)
+
+cols = features + config_cols + [target]
+df = pd.read_csv("in_out_files/dataset_ul.csv", usecols=lambda column: column in cols)
 
 df["cpu_platform"] = df["cpu_platform"].replace(
     {
@@ -36,101 +37,113 @@ hyperparams = {
     "NUC1": {
         "LR": LinearRegression(fit_intercept=True),
         "XGB": xgb.XGBRegressor(
+            colsample_bytree=1.0,
+            gamma=0,
+            learning_rate=0.1,
+            max_depth=9,
+            min_child_weight=6,
+            n_estimators=151,
+            reg_alpha=0,
+            reg_lambda=10,
+            subsample=0.8,
+            missing=nan,
             random_state=42,
-            booster="dart",
-            learning_rate=np.float64(0.19366649440872624),
-            n_estimators=114,
-            reg_alpha=np.float64(0.03445612872982562),
-            reg_lambda=np.float64(0.4387505218486637),
-            scale_pos_weight=2,
         ),
         "NN": MLPRegressor(
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=0.1,
-            random_state=42,
+            solver="adam",
+            learning_rate_init=0.01,
+            hidden_layer_sizes=(90, 100, 60),
+            beta_2=0.99,
+            beta_1=0.9,
+            alpha=0.01,
             activation="relu",
-            alpha=np.float64(0.025556706015992626),
-            beta_1=np.float64(0.8717195393485015),
-            beta_2=np.float64(0.9596773079191824),
-            hidden_layer_sizes=(113,),
-            learning_rate_init=0.1,
-            solver="lbfgs",
+            early_stopping=True,
+            max_iter=500,
+            random_state=42,
         ),
     },
     "NUC2": {
         "LR": LinearRegression(fit_intercept=True),
         "XGB": xgb.XGBRegressor(
+            colsample_bytree=0.7,
+            gamma=0,
+            learning_rate=0.3,
+            max_depth=3,
+            min_child_weight=6,
+            n_estimators=144,
+            reg_alpha=0.01,
+            reg_lambda=0.1,
+            subsample=0.7,
+            missing=nan,
             random_state=42,
-            booster="gbtree",
-            learning_rate=np.float64(0.1844533971618749),
-            n_estimators=78,
-            reg_alpha=np.float64(0.5304170827353661),
-            reg_lambda=np.float64(0.7882212441472002),
-            scale_pos_weight=1,
         ),
         "NN": MLPRegressor(
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=0.1,
-            random_state=42,
+            solver="adam",
+            learning_rate_init=0.01,
+            hidden_layer_sizes=(60, 30, 95),
+            beta_2=0.999,
+            beta_1=0.9,
+            alpha=0.0001,
             activation="relu",
-            alpha=np.float64(0.07286827507351072),
-            beta_1=np.float64(0.8383476262914942),
-            beta_2=np.float64(0.9753284351908575),
-            hidden_layer_sizes=(55,),
-            learning_rate_init=0.001,
-            solver="lbfgs",
+            early_stopping=True,
+            max_iter=500,
+            random_state=42,
         ),
     },
     "Server1": {
         "LR": LinearRegression(fit_intercept=True),
         "XGB": xgb.XGBRegressor(
+            colsample_bytree=1.0,
+            gamma=0,
+            learning_rate=0.3,
+            max_depth=4,
+            min_child_weight=1,
+            n_estimators=192,
+            reg_alpha=0.01,
+            reg_lambda=0.1,
+            subsample=0.8,
+            missing=nan,
             random_state=42,
-            booster="gbtree",
-            learning_rate=np.float64(0.16780581384765997),
-            n_estimators=152,
-            reg_alpha=np.float64(0.7588411898224708),
-            reg_lambda=np.float64(0.0865104215069239),
-            scale_pos_weight=2,
         ),
         "NN": MLPRegressor(
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=0.1,
-            random_state=42,
+            solver="adam",
+            learning_rate_init=0.001,
+            hidden_layer_sizes=(40, 70, 65),
+            beta_2=0.99,
+            beta_1=0.9,
+            alpha=0.001,
             activation="relu",
-            alpha=np.float64(0.08044028100378249),
-            beta_1=np.float64(0.9391484519043694),
-            beta_2=np.float64(0.9223299149135724),
-            hidden_layer_sizes=(137,),
-            learning_rate_init=0.1,
-            solver="lbfgs",
+            early_stopping=True,
+            max_iter=500,
+            random_state=42,
         ),
     },
     "Server2": {
         "LR": LinearRegression(fit_intercept=True),
         "XGB": xgb.XGBRegressor(
+            colsample_bytree=1.0,
+            gamma=0,
+            learning_rate=0.05,
+            max_depth=3,
+            min_child_weight=1,
+            n_estimators=193,
+            reg_alpha=0,
+            reg_lambda=0.1,
+            subsample=0.7,
+            missing=nan,
             random_state=42,
-            booster="dart",
-            learning_rate=np.float64(0.10544851212228039),
-            n_estimators=172,
-            reg_alpha=np.float64(0.9905472744586734),
-            reg_lambda=np.float64(0.9613097675711414),
-            scale_pos_weight=2,
         ),
         "NN": MLPRegressor(
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=0.1,
-            random_state=42,
-            activation="relu",
-            alpha=np.float64(0.05301612276992186),
-            beta_1=np.float64(0.9029264376294966),
-            beta_2=np.float64(0.9432064447280365),
-            hidden_layer_sizes=(17,),
+            solver="sgd",
             learning_rate_init=0.001,
-            solver="lbfgs",
+            hidden_layer_sizes=(15, 30, 85),
+            beta_2=0.999,
+            beta_1=0.95,
+            alpha=0.01,
+            activation="relu",
+            early_stopping=True,
+            max_iter=500,
+            random_state=42,
         ),
     },
 }
@@ -148,8 +161,6 @@ for cpu in platforms:
     ]
 
     if not df_cpu.empty:
-        scaler = MinMaxScaler()
-        df_cpu[features] = scaler.fit_transform(df_cpu[features])
         X = np.array(df_cpu[features])
         y = np.array(df_cpu[target])
 
@@ -159,6 +170,10 @@ for cpu in platforms:
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=n_test, train_size=n_train, random_state=42
         )
+
+        scaler = MinMaxScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
 
         for model_name, model in hyperparams[cpu].items():
             model.fit(X_train, y_train)
