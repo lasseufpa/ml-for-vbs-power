@@ -16,7 +16,7 @@ cols = [
     "BW",
 ]
 
-df = pd.read_csv("in_out_files/dataset_ul.csv", usecols=cols)
+df = pd.read_csv("in_out_files/dataset_ul.csv", usecols=lambda column: column in cols)
 
 df.rename(
     columns={

@@ -1,21 +1,26 @@
 import sys
 import warnings
 from datetime import datetime
+from itertools import product
 
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from pytz import timezone
 from scipy.stats import randint, uniform
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import (mean_absolute_error,
-                             mean_absolute_percentage_error,
-                             root_mean_squared_error)
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.metrics import (
+    make_scorer,
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    root_mean_squared_error,
+)
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
 def current_time():
@@ -37,12 +42,21 @@ def format_params(model_name, models, params):
     return f"{model_name}({param_str}{custom_param})"
 
 
-def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
+def evaluate_models_by_platform(features, target, best_metric="mse"):
     metrics = {
         "mae": mean_absolute_error,
         "rmse": root_mean_squared_error,
         "mape": mean_absolute_percentage_error,
     }
+
+    if best_metric == "mape":
+        scoring = make_scorer(mean_absolute_percentage_error, greater_is_better=False)
+    elif best_metric == "mae":
+        scoring = make_scorer(mean_absolute_error, greater_is_better=False)
+    elif best_metric == "rmse":
+        scoring = make_scorer(root_mean_squared_error, greater_is_better=False)
+    else:
+        raise ValueError(f"Unsupported metric: {best_metric}")
 
     platforms = df["cpu_platform"].unique()
 
@@ -60,9 +74,6 @@ def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
             print(f"No data available for platform: {platform}")
             continue
 
-        scaler = MinMaxScaler()
-        df_platform[features] = scaler.fit_transform(df_platform[features])
-
         X = np.array(df_platform[features])
         y = np.array(df_platform[target])
 
@@ -73,6 +84,10 @@ def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
             X, y, test_size=n_test, train_size=n_train, random_state=42
         )
 
+        scaler = MinMaxScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+
         model_results = {}
 
         for model_name, model in models.items():
@@ -81,14 +96,23 @@ def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
 
                 model_params = param_distribs.get(model_name, {})
 
-                search = RandomizedSearchCV(
-                    model,
-                    model_params,
-                    n_iter=n_iter,
-                    random_state=42,
-                    scoring="neg_mean_squared_error",
-                    n_jobs=-1,
-                )
+                if model_name == "LinearRegression":
+                    search = GridSearchCV(
+                        model,
+                        model_params,
+                        scoring=scoring,
+                        n_jobs=-1,
+                    )
+                else:
+                    search = RandomizedSearchCV(
+                        model,
+                        model_params,
+                        n_iter=n_iter_map[model_name],
+                        random_state=42,
+                        scoring=scoring,
+                        n_jobs=-1,
+                    )
+
                 search.fit(X_train, y_train)
                 y_pred = search.best_estimator_.predict(X_test)
 
@@ -108,7 +132,6 @@ def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
                 model_results, key=lambda x: model_results[x]["metric"]
             )
             best_score = model_results[best_model_name]["metric"]
-            best_params = model_results[best_model_name]["params"]
 
             print(
                 f"\nBest model for {platform}: {best_model_name} - {best_metric.upper()}: {best_score:.4f}"
@@ -126,54 +149,76 @@ def evaluate_models_by_platform(features, target, best_metric="mse", n_iter=10):
 with open("in_out_files/random_search_output.txt", "w") as f:
     sys.stdout = f
 
-    features = ["airtime", "mean_snr", "mean_used_mcs"]
-    target = "rapl_power"
-    config_cols = ["cpu_platform", "fixed_mcs_flag", "failed_experiment", "BW"]
-    df = pd.read_csv(
-        "in_out_files/dataset_ul.csv", usecols=features + config_cols + [target]
-    )
+    try:
+        features = ["airtime", "mean_snr", "mean_used_mcs"]
+        target = "rapl_power"
+        config_cols = ["cpu_platform", "fixed_mcs_flag", "failed_experiment", "BW"]
 
-    df["cpu_platform"] = df["cpu_platform"].replace(
-        {
-            "Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz": "NUC1",
-            "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz": "NUC2",
-            "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz": "Server1",
-            "Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz": "Server2",
+        cols = features + config_cols + [target]
+        df = pd.read_csv(
+            "in_out_files/dataset_ul.csv",
+            usecols=lambda column: column in cols,
+        )
+
+        df["cpu_platform"] = df["cpu_platform"].replace(
+            {
+                "Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz": "NUC1",
+                "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz": "NUC2",
+                "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz": "Server1",
+                "Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz": "Server2",
+            }
+        )
+
+        models = {
+            "xgb.XGBRegressor": xgb.XGBRegressor(random_state=42),
+            "LinearRegression": LinearRegression(),
+            "MLPRegressor": MLPRegressor(
+                max_iter=500,
+                early_stopping=True,
+                validation_fraction=0.1,
+                random_state=42,
+            ),
         }
-    )
 
-    models = {
-        "xgb.XGBRegressor": xgb.XGBRegressor(random_state=42),
-        "LinearRegression": LinearRegression(),
-        "MLPRegressor": MLPRegressor(
-            max_iter=500, early_stopping=True, validation_fraction=0.1, random_state=42
-        ),
-    }
+        hidden_layer_sizes = []
+        for n_layers in range(1, 4):
+            for layer_sizes in product(range(5, 101, 5), repeat=n_layers):
+                hidden_layer_sizes.append(layer_sizes)
 
-    param_distribs = {
-        "xgb.XGBRegressor": {
-            "n_estimators": randint(50, 200),
-            "learning_rate": uniform(0.01, 0.2),
-            "reg_alpha": uniform(0, 1),
-            "reg_lambda": uniform(0, 1),
-            "scale_pos_weight": [1, 2],
-            "booster": ["gbtree", "gblinear", "dart"],
-        },
-        "LinearRegression": {
-            "fit_intercept": [True, False],
-        },
-        "MLPRegressor": {
-            "hidden_layer_sizes": [(i,) for i in range(1, 200, 2)],
-            "activation": ["relu", "tanh", "logistic"],
-            "solver": ["adam", "lbfgs", "sgd"],
-            "alpha": uniform(0.0001, 0.1),
-            "learning_rate_init": [0.001, 0.01, 0.1],
-            "beta_1": uniform(0.8, 0.199),
-            "beta_2": uniform(0.9, 0.0999),
-        },
-    }
+        param_distribs = {
+            "xgb.XGBRegressor": {
+                "n_estimators": randint(50, 201),
+                "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
+                "max_depth": randint(3, 11),
+                "min_child_weight": randint(1, 7),
+                "gamma": [0, 0.1, 0.3, 1],
+                "subsample": [0.7, 0.8, 1.0],
+                "colsample_bytree": [0.7, 0.8, 1.0],
+                "reg_alpha": [0, 0.01, 0.1],
+                "reg_lambda": [0.1, 1, 10],
+            },
+            "LinearRegression": {
+                "fit_intercept": [True, False],
+            },
+            "MLPRegressor": {
+                "hidden_layer_sizes": hidden_layer_sizes,
+                "activation": ["relu", "tanh", "logistic"],
+                "solver": ["adam", "sgd"],
+                "learning_rate_init": [0.0005, 0.001, 0.01],
+                "alpha": [0.0001, 0.001, 0.01],
+                "beta_1": [0.9, 0.95],
+                "beta_2": [0.99, 0.999],
+            },
+        }
 
-    evaluate_models_by_platform(features, target, best_metric="mape", n_iter=100000)
+        n_iter_map = {
+            "xgb.XGBRegressor": 117418,  # Total: 11,741,760
+            "MLPRegressor": 18187,  # Total: 1,818,720
+        }
+
+        evaluate_models_by_platform(features, target, best_metric="mape")
+    finally:
+        sys.stdout = sys.__stdout__
 
 sys.stdout = sys.__stdout__
 print("Execution finished.")
