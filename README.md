@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository contains machine learning models and supporting scripts for estimating the power consumption of virtual Base Stations (vBS), as presented in the article *Machine Learning Models for Virtual Base Station Power Consumption Estimation*. It includes tools for data visualization, hyperparameter tuning, model training and testing, as well as results analysis.
+This repository contains machine learning models and supporting scripts for estimating the power consumption of virtual Base Stations (vBS), as presented in the paper *Machine Learning Models for Virtual Base Station Power Consumption Estimation*. It includes tools for data visualization, hyperparameter tuning, model training and testing, as well as results analysis.
 
 ## Installation
 
