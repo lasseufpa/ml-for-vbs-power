@@ -1,3 +1,18 @@
+"""
+This script performs model training and evaluation for power consumption prediction
+across multiple CPU platforms. Three regression models (Linear Regression, XGBoost,
+and Neural Network) are pre-configured with optimized hyperparameters for each platform.
+
+The script:
+- Loads and filters the dataset
+- Splits data into train/test sets
+- Applies MinMax scaling
+- Fits each model using the specified hyperparameters
+- Evaluates using MAE, RMSE, and MAPE
+- Saves predictions and metrics
+- Generates scatter plots comparing predicted vs. actual power consumption per platform
+"""
+
 import warnings
 
 import matplotlib.pyplot as plt
@@ -6,24 +21,27 @@ import pandas as pd
 import xgboost as xgb
 from numpy import nan
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_absolute_percentage_error,
-    root_mean_squared_error,
-)
+from sklearn.metrics import (mean_absolute_error,
+                             mean_absolute_percentage_error,
+                             root_mean_squared_error)
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler
 
+# Ignore warnings for cleaner output
 warnings.filterwarnings("ignore")
 
+# Feature and target definitions
 features = ["airtime", "mean_snr", "mean_used_mcs"]
 target = "rapl_power"
 config_cols = ["cpu_platform", "fixed_mcs_flag", "failed_experiment", "BW"]
 
 cols = features + config_cols + [target]
+
+# Load only necessary columns from CSV
 df = pd.read_csv("in_out_files/dataset_ul.csv", usecols=lambda column: column in cols)
 
+# Simplify CPU platform names
 df["cpu_platform"] = df["cpu_platform"].replace(
     {
         "Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz": "NUC1",
@@ -33,6 +51,7 @@ df["cpu_platform"] = df["cpu_platform"].replace(
     }
 )
 
+# Predefined hyperparameters for each model and platform (from prior optimization)
 hyperparams = {
     "NUC1": {
         "LR": LinearRegression(fit_intercept=True),
@@ -148,9 +167,11 @@ hyperparams = {
     },
 }
 
+# List of platforms found in the dataset
 platforms = df["cpu_platform"].unique()
 final_results = []
 
+# Loop through each CPU platform and evaluate models
 for cpu in platforms:
     df_cpu = df.copy()
     df_cpu = df_cpu.loc[
@@ -161,9 +182,11 @@ for cpu in platforms:
     ]
 
     if not df_cpu.empty:
+        # Prepare features and labels
         X = np.array(df_cpu[features])
         y = np.array(df_cpu[target])
 
+        # Split data into training and testing sets
         n_samples = len(X)
         n_test = int(np.floor(n_samples * 0.2))
         n_train = int(np.floor(n_samples * 0.8))
@@ -171,10 +194,12 @@ for cpu in platforms:
             X, y, test_size=n_test, train_size=n_train, random_state=42
         )
 
+        # Normalize features
         scaler = MinMaxScaler()
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
+        # Evaluate all models for this platform
         for model_name, model in hyperparams[cpu].items():
             model.fit(X_train, y_train)
             y_pred = model.predict(X_test)
@@ -195,9 +220,11 @@ for cpu in platforms:
                 }
             )
 
+# Convert results to DataFrame and save
 results_df = pd.DataFrame(final_results)
 results_df.to_csv("in_out_files/train_test_output.csv", index=False)
 
+# Plotting: scatter plots of predicted vs actual power per CPU platform
 font_size = 11
 plt.rcParams.update({"font.size": font_size})
 
@@ -207,6 +234,7 @@ for cpu in platforms:
     all_preds = []
     all_tests = []
 
+    # Plot predictions from each model
     for index, row in results_df[results_df["CPU"] == cpu].iterrows():
         model = row["Model"]
         y_test = row["y_test"]
@@ -215,6 +243,7 @@ for cpu in platforms:
         all_preds.extend(y_pred)
         all_tests.extend(y_test)
 
+    # Add identity line for reference
     min_val = min(min(all_tests), min(all_preds))
     max_val = max(max(all_tests), max(all_preds))
     plt.plot(
@@ -225,6 +254,7 @@ for cpu in platforms:
         label="Identity Line",
     )
 
+    # Final plot adjustments
     plt.xlabel("Predicted Power [W]", fontsize=font_size)
     plt.ylabel("Measured Power [W]", fontsize=font_size)
     plt.legend(fontsize=font_size)

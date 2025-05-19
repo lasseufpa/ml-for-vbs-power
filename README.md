@@ -70,18 +70,18 @@ This ensures formatting and linting checks run before each commit.
 If you use this repository in your work, please cite the corresponding publication:
 
 ```BibTeX
-    @ARTICLE{<Text here>,
-        author={<Text here>},
-        journal={<Text here>},
-        title={<Text here>},
-        year={<Text here>},
-        volume={<Text here>},
-        number={<Text here>},
-        pages={<Text here>},
-        doi={<Text here>}
+    @ARTICLE{gomes2025,
+        author = {Gomes, Elen and Rodrigues, Lucas and Bezerra, Diego and Sadok, Djamel F. H. and Gonçalves, Glauco},
+        title = {{Machine Learning Models for Virtual Base Station Power Consumption Estimation}},
+        journal = {<Journal Name>},
+        year = {2025},
+        volume = {<Volume>},
+        number = {<Issue Number>},
+        pages = {<Start Page>--<End Page>},
+        doi = {<DOI>}
     }
 ```
 
 ```txt
-<Text here>
+E. Gomes, L. Rodrigues, D. Bezerra, D. F. H. Sadok, and G. Gonçalves, “Machine Learning Models for Virtual Base Station Power Consumption Estimation,” <Journal Name>, vol. <Volume>, no. <Issue Number>, <Start Page>–<End Page>, 2025. DOI: <DOI>.
 ```
