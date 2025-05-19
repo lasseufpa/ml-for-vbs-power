@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Dataset
-./in_out_files/dataset_ul.csv
+in_out_files/dataset_ul.csv
