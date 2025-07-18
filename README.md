@@ -70,18 +70,16 @@ This ensures formatting and linting checks run before each commit.
 If you use this repository in your work, please cite the corresponding publication:
 
 ```BibTeX
-    @ARTICLE{gomes2025,
-        author = {Gomes, Elen and Rodrigues, Lucas and Bezerra, Diego and Sadok, Djamel F. H. and Gonçalves, Glauco},
-        title = {{Machine Learning Models for Virtual Base Station Power Consumption Estimation}},
-        journal = {<Journal Name>},
-        year = {2025},
-        volume = {<Volume>},
-        number = {<Issue Number>},
-        pages = {<Start Page>--<End Page>},
+    @inproceedings{gomes2025,
+        author    = {Gomes, Elen and Rodrigues, Lucas and Bezerra, Diego and Sadok, Djamel F. H. and Gonçalves, Glauco},
+        title     = {Machine Learning Models for Virtual Base Station Power Consumption Estimation},
+        booktitle = {Anais do XLIII Simpósio Brasileiro de Telecomunicações (SBrT)},
+        year      = {2025},
+        publisher = {Sociedade Brasileira de Telecomunicações},
         doi = {<DOI>}
     }
 ```
 
 ```txt
-E. Gomes, L. Rodrigues, D. Bezerra, D. F. H. Sadok, and G. Gonçalves, “Machine Learning Models for Virtual Base Station Power Consumption Estimation,” <Journal Name>, vol. <Volume>, no. <Issue Number>, <Start Page>–<End Page>, 2025. DOI: <DOI>.
+E. Gomes, L. Rodrigues, D. Bezerra, D. F. H. Sadok, and G. Gonçalves, “Machine learning models for virtual base station power consumption estimation,” in Anais do XLIII Simpósio Brasileiro de Telecomunicações (SBrT), Sociedade Brasileira de Telecomunicações, 2025. DOI: <DOI>.
 ```
